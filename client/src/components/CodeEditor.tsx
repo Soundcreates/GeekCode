@@ -17,7 +17,7 @@ const CodeEditor: React.FC = () => {
     console.log("Monaco Instance: ", editor);
   };
 
-  const onSelect = (language) => {
+  const onSelect = (language: string) => {
     setLanguage(language);
   };
 
@@ -44,7 +44,7 @@ const CodeEditor: React.FC = () => {
 
       {/* Output */}
       <div className="w-1/2">
-        <Output editorRef={editorRef} language={language} />
+        <Output value={value} language={language} />
       </div>
     </div>
   );

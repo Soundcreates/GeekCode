@@ -2,18 +2,19 @@ import React, { useState, useEffect } from "react";
 import { executeCode, getLanguages } from "../services/api";
 
 interface OutputProps {
-  editorRef: React.RefObject<any>;
+  value: string;
   language: string;
 }
-function Output({ editorRef, language }: OutputProps) {
-  const [output, setOutput] = useState<any>(null);
+function Output({ value, language }: OutputProps) {
+  const [output, setOutput] = useState<string | null>(null);
 
   useEffect(() => {
     getLanguages();
   }, []);
 
   const runCode = async () => {
-    const sourceCode = editorRef.current.getValue();
+    setOutput(null);
+    const sourceCode = value;
     if (!sourceCode) return;
     try {
       const { run: result } = await executeCode(language, sourceCode);
