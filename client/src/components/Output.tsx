@@ -13,13 +13,14 @@ function Output({ value, language }: OutputProps) {
   }, []);
 
   const runCode = async () => {
+    console.log("Running code...");
     setOutput(null);
     const sourceCode = value;
     if (!sourceCode) return;
     try {
       const { run: result } = await executeCode(language, sourceCode);
       setOutput(result.output);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error at output.tsx in runcode function: ", err.message);
     }
   };
@@ -32,7 +33,11 @@ function Output({ value, language }: OutputProps) {
       >
         Run code
       </button>
-      <div className="h-[79vh] bg-slate-950 rounded-md w-full mt-2 text-white py-2 shadow-md">
+      <div
+        className={`h-[79vh] bg-slate-950 rounded-md w-full mt-2 ${
+          output ? "text-white" : "text-gray-500/40"
+        } py-2 shadow-md`}
+      >
         <p className="p-5">
           {output ? output : "Run code to see the output here"}
         </p>
