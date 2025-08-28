@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"log"
-	
 
+	"geekCode/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -18,6 +18,16 @@ func ConnectDB(cfg *Config) (*gorm.DB, error) {
 	if err != nil {
 		log.Fatal("Failed to connect to database ", err)
 		return nil, err
+	}
+
+	err = db.AutoMigrate(
+				&models.User{},
+				&models.Room{},
+				
+			)
+
+	if err != nil {
+		log.Fatal("Failed to migrate database ", err)
 	}
 
 	return db, nil

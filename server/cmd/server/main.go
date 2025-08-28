@@ -19,7 +19,7 @@ func main () {
 
 	r:=gin.Default()
 
-	routes.RegisterRoutes(r, db)
+	routes.RegisterRoutes(r, db, cfg.JWTSecret)
 
 	port := os.Getenv("PORT")
 	if port == "" {

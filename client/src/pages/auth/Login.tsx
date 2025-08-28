@@ -1,7 +1,7 @@
 import React from "react";
 
 function Login() {
-  return <div>Login</div>;
+  return <div className="bg-black w-full h-screen"></div>;
 }
 
 export default Login;

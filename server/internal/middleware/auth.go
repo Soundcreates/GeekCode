@@ -1,0 +1,46 @@
+package middleware
+
+import (
+	"net/http"
+	"strings" 	
+	"github.com/gin-gonic/gin"
+
+	"geekCode/internal/auth"
+)
+
+
+func AuthMiddleware(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) { //anonymous function
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "missing auth header"})
+			return
+		}
+
+		parts := strings.Split(authHeader, " ") 
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "invalid auth header"})
+			return
+		}
+
+		userID, err := auth.ValidateToken(parts[1], secret)
+
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "invalid auth token"})
+			return
+		}
+
+
+		//attaching user id to context (works like localstorage in js) , but its the gins context storage
+		/* 
+		Lives only for the current HTTP request being processed.
+
+		It attaches data (like userId) to Gin’s context, so later middleware/handlers can retrieve it using c.Get("userId").
+
+		Once the request finishes, the data is gone — it doesn’t persist across requests.
+		*/
+
+		c.Set("userId", userID)
+		c.Next() 
+	}
+}
