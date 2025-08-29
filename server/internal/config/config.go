@@ -14,6 +14,7 @@ type Config struct {
 	DBPassword string
 	DBName  string
 	JWTSecret string
+	FRONTEND_URL string
 }
 
 func LoadConfig() *Config {
@@ -30,5 +31,6 @@ func LoadConfig() *Config {
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:  os.Getenv("DB_NAME"),
 		JWTSecret: os.Getenv("JWTSecret"),
+		FRONTEND_URL: os.Getenv("FRONTEND_URL"),
 	}
 }
