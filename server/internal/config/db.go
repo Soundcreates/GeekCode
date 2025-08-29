@@ -20,6 +20,7 @@ func ConnectDB(cfg *Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	//automigrating models
 	err = db.AutoMigrate(
 				&models.User{},
 				&models.Room{},

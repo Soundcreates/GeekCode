@@ -67,7 +67,7 @@ function Landing() {
             <div className="p-2 bg-black rounded-md  text-3xl transition-transform duration-300 hover:scale-110 cursor-pointer">
               <h1
                 className="text-white/70 transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,255,255,1)]"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/get-started")}
               >
                 Get Started
               </h1>

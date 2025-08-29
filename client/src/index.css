@@ -230,3 +230,18 @@
   font-style: normal;
   font-variation-settings: "slnt" 0;
 }
+
+@keyframes Slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-right {
+  animation: Slide-right 1s ease forwards;
+}

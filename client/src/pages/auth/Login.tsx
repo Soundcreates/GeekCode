@@ -2,6 +2,7 @@ import { StarsBackground } from "@/components/ui/stars-background";
 import React from "react";
 import { ShootingStars } from "@/components/ui/shooting-stars";
 import { FaEnvelope, FaLock } from "react-icons/fa"; // Icons for inputs
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
 function Login() {
   return (
@@ -9,8 +10,13 @@ function Login() {
       <StarsBackground className="z-0" />
       <ShootingStars />
       <div className="slide-up relative z-10 bg-black/50 backdrop-blur-md border-2 border-white/50 w-[400px] p-8 rounded-lg text-white shadow-lg transition-transform transform hover:scale-105">
-        <h1 className="font-semibold text-3xl mb-1">Hey there,</h1>
-        <h1 className="mb-6">Login to get back to your coding!</h1>
+        <TextGenerateEffect words="Hey there," textSize="xl" duration={0.2} />
+        <TextGenerateEffect
+          textSize="sm"
+          words="Coding made fun with friends!"
+          duration={0.2}
+          className="mb-6"
+        />
         <form className="mt-5">
           <div className="mb-4 relative">
             <label htmlFor="email" className="block font-bold mb-2">
@@ -44,7 +50,7 @@ function Login() {
 
           <button
             type="submit"
-            className="cursor-pointer w-full p-2 bg-blue-700 hover:scale-105 hover:bg-white text-black rounded-md hover:bg-blue-800  transition-all duration-300"
+            className="cursor-pointer text-white w-full p-2 bg-blue-700 hover:scale-105 hover:bg-white hover:text-black rounded-md hover:bg-blue-800  transition-all duration-300"
           >
             Login
           </button>

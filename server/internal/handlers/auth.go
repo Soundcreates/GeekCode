@@ -4,7 +4,7 @@ import (
 	"geekCode/internal/auth"
 	"geekCode/internal/models"
 	"net/http"
-
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -23,9 +23,9 @@ type LoginRequest struct {
 type RegisterRequest struct {
 	FirstName string `json:"firstname" binding:"required"`
 	LastName string `json:"lastname" binding:"required"`
-	Username string `json:"username" binding: "required"`
-	Email  string `json:"email" binding: "required,email"`
-	Password string `json:"password" binding: "required,min=6"`
+	Username string `json:"username" binding:"required"`
+	Email  string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"` //the tags must never have space after binding
 }
 
 
@@ -41,19 +41,20 @@ func (h *Handler) Login (c *gin.Context) {
 	var user models.User
 	if err := h.DB.First(&user, "email = ?", req.Email).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "invalid email or password"})
+		return
 	}
 	
 	//checking password
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) ; err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-		//we dont gotta return explcitly if we use AbortWithJSON , it does it automatically for us
+		return
 	}
 
 	token, err := auth.GenerateToken(user.ID, cfg.JWTSecret)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error"  : "failed to create tokebn"})
-
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -66,18 +67,23 @@ func (h *Handler) Login (c *gin.Context) {
 func (h *Handler) Register(c *gin.Context) {
 	var RegisterReq RegisterRequest
 
+	fmt.Println("Reached here")
+
 	if err := c.ShouldBindJSON(&RegisterReq); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error":  err.Error()})
+		return
 	}
 
 	var user models.User
 	if err := h.DB.First(&user, "email = ? ", RegisterReq.Email).Error; err == nil {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error" : "user already exists"})
+		return
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword(([]byte(RegisterReq.Password)), bcrypt.DefaultCost)
 	if err!= nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to register"})
+		return
 	}
 	user.FirstName = RegisterReq.FirstName
 	user.LastName = RegisterReq.LastName
