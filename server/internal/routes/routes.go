@@ -26,9 +26,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB ,jwtSecret string) {
 	//protectedRoutes
 	protected := api.Group("/")
 	//profile route
-	protected.GET("/profile", h.GetProfile)
-
+	
 	protected.Use(middleware.AuthMiddleware(jwtSecret))
+	protected.GET("/profile", h.GetProfile)
 	protected.POST("/rooms", h.CreateRoom)
 	protected.GET("/rooms", h.ListRooms)
 	protected.GET("/rooms/:id", h.GetRoom)

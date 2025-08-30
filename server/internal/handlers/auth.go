@@ -65,6 +65,10 @@ func (h *Handler) Login (c *gin.Context) {
 
 //register
 func (h *Handler) Register(c *gin.Context) {
+
+	//loading env variables
+	cfg := config.LoadConfig();
+
 	var RegisterReq RegisterRequest
 
 	fmt.Println("Reached here")
@@ -95,8 +99,14 @@ func (h *Handler) Register(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
+	token, err := auth.GenerateToken(user.ID, cfg.JWTSecret);
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
+		return
+	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "user created successfully", "user": user})
+
+	c.JSON(http.StatusCreated, gin.H{"message": "user created successfully", "user": user,"token" : token})
 }
 
 //profile (getMe in js)
@@ -114,6 +124,8 @@ func(h *Handler) GetProfile(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		
 	}
+
+
 
 	c.JSON(http.StatusOK, gin.H{
 		"currentUser": gin.H{

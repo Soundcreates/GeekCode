@@ -4,6 +4,7 @@ import { ShootingStars } from "@/components/ui/shooting-stars";
 import { FaEnvelope, FaLock } from "react-icons/fa"; // Icons for inputs
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import axios from "axios";
+import { useNavigate } from "react-router";
 
 type FormData = {
   firstname: string;
@@ -14,6 +15,10 @@ type FormData = {
 };
 
 function Register() {
+  const navigate = useNavigate();
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [formData, setFormData] = useState<FormData>({
     firstname: "",
     lastname: "",
@@ -24,6 +29,8 @@ function Register() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    setIsLoading(true);
 
     try {
       //not using fetchdata because while doing auth, the user doesnt have any token
@@ -43,9 +50,13 @@ function Register() {
           email: "",
           password: "",
         });
+        localStorage.setItem("token", response.data.token);
+        navigate("/dashboard");
       }
     } catch (err: any) {
       console.error("Error occured during registration: ", err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -157,9 +168,12 @@ function Register() {
 
           <button
             type="submit"
-            className="cursor-pointer w-full p-2 bg-blue-700 text-white hover:scale-105 hover:bg-white hover:text-black rounded-md hover:bg-blue-800  transition-all duration-300"
+            className={`cursor-pointer w-full p-2 bg-blue-700 text-white hover:scale-105 hover:bg-white hover:text-black rounded-md hover:bg-blue-800  transition-all duration-300 ${
+              isLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isLoading}
           >
-            Register
+            {isLoading ? "Registering..." : "Register"}
           </button>
         </form>
       </div>

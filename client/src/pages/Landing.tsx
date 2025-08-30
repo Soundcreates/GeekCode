@@ -48,7 +48,7 @@ function Landing() {
         </div> */}
 
         <div className="flex flex-col items-center justify-center  h-full">
-          <TextGenerateEffect words="Welcome to GeekCode" />
+          <TextGenerateEffect words="Welcome to GeekCode" textSize="5xl" />
           <p className="mt-6 text-lg text-white/70 max-w-xl text-center generate-p">
             Dive into the world of collaborative coding with GeekCode. Create or
             join coding rooms and code together in real-time!

@@ -6,6 +6,7 @@ import { CodeProvider } from "./context/globalCode.tsx";
 import Landing from "./pages/Landing.js";
 import Login from "./pages/auth/Login.tsx";
 import Register from "./pages/auth/Register.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/get-started" element={<Register />} />
           <Route path="/code/:room" element={<CodeLayout />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </CodeProvider>
     </BrowserRouter>
