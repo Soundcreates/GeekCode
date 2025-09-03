@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext, createContext } from "react";
 import { fetchData } from "../services/backendApi";
 
 type User = {
-  id: string;
+  id: number;
   firstname: string;
   lastname: string;
   username: string;
@@ -25,18 +25,14 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
       try {
-        const response = await fetchData.get("/api/me", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+        const response = await fetchData.get("/profile");
 
         if (response.status === 200) {
           setUser(response.data.currentUser);
@@ -59,5 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return ctx;
 };

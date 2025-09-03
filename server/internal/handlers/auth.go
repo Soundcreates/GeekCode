@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	
-	"geekCode/internal/config"
+	// "geekCode/internal/config"
 )
 
 //authHandler
@@ -30,7 +30,7 @@ type RegisterRequest struct {
 
 
 func (h *Handler) Login (c *gin.Context) {
-	cfg := config.LoadConfig() 
+	// cfg := config.LoadConfig() 
 
 
 	var req LoginRequest;
@@ -51,7 +51,7 @@ func (h *Handler) Login (c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID, cfg.JWTSecret)
+	token, err := auth.GenerateToken(user.ID, h.cfg.JWTSecret)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error"  : "failed to create tokebn"})
 		return
@@ -67,7 +67,7 @@ func (h *Handler) Login (c *gin.Context) {
 func (h *Handler) Register(c *gin.Context) {
 
 	//loading env variables
-	cfg := config.LoadConfig();
+	// cfg := config.LoadConfig();
 
 	var RegisterReq RegisterRequest
 
@@ -99,7 +99,7 @@ func (h *Handler) Register(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
-	token, err := auth.GenerateToken(user.ID, cfg.JWTSecret);
+	token, err := auth.GenerateToken(user.ID, h.cfg.JWTSecret);
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
 		return
@@ -113,7 +113,7 @@ func (h *Handler) Register(c *gin.Context) {
 func(h *Handler) GetProfile(c *gin.Context) {
 	//first is to get the user id from the context storage
 	uid, exists := c.Get("userId") //the 'exists' is only available to use if we use type assertion
-
+	fmt.Println("User ID from context: ", uid)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user id not found in context"})
 	}
@@ -130,10 +130,12 @@ func(h *Handler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"currentUser": gin.H{
 			"id":         currentUser.ID,
-			"first_name": currentUser.FirstName,
-			"last_name": currentUser.LastName,
+			"firstname": currentUser.FirstName,
+			"lastname": currentUser.LastName,
 			"username": currentUser.Username,
 			"email": currentUser.Email,
+			"createdAt": currentUser.CreatedAt,
+			"updatedAt": currentUser.UpdatedAt,
 		},
 	})
 	

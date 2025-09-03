@@ -245,3 +245,17 @@
 .slide-right {
   animation: Slide-right 1s ease forwards;
 }
+
+@keyframes borderPulse {
+  0%,
+  100% {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 1);
+  }
+}
+
+.hover\\:animate-borderpulse:hover {
+  animation: borderPulse 1.5s infinite;
+}

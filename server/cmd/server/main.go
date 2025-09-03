@@ -9,6 +9,7 @@ import (
 	"geekCode/internal/routes"
 	"github.com/gin-contrib/cors"
 	"time"
+
 )
 
 func main () {
@@ -35,7 +36,7 @@ func main () {
 
 
 
-	routes.RegisterRoutes(r, db, cfg.JWTSecret)
+	routes.RegisterRoutes(r, db, cfg.JWTSecret, cfg)
 	
 
 	port := os.Getenv("PORT")

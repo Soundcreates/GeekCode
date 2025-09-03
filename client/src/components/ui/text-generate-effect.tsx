@@ -56,7 +56,31 @@ export const TextGenerateEffect = ({
     <div className={cn("font-bold", className)}>
       <div className="mt-4">
         <div
-          className={`text-${textSize} dark:text-white text-black text-2xl leading-snug tracking-wide`}
+          className={` dark:text-white text-black text-2xl leading-snug tracking-wide`}
+          style={{
+            fontSize:
+              textSize === "sm"
+                ? "1rem"
+                : textSize === "xl"
+                ? "1.25rem"
+                : textSize === "2xl"
+                ? "1.5rem"
+                : textSize === "3xl"
+                ? "1.875rem"
+                : textSize === "4xl"
+                ? "2.25rem"
+                : textSize === "5xl"
+                ? "3rem"
+                : textSize === "6xl"
+                ? "3.75rem"
+                : textSize === "7xl"
+                ? "4.5rem"
+                : textSize === "8xl"
+                ? "6rem"
+                : textSize === "9xl"
+                ? "8rem"
+                : "3rem",
+          }}
         >
           {renderWords()}
         </div>

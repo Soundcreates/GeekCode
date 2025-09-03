@@ -7,6 +7,7 @@ import Landing from "./pages/Landing.js";
 import Login from "./pages/auth/Login.tsx";
 import Register from "./pages/auth/Register.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import Rooms from "./pages/Rooms.tsx";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/get-started" element={<Register />} />
           <Route path="/code/:room" element={<CodeLayout />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/rooms/:roomId" element={<Rooms />} />
         </Routes>
       </CodeProvider>
     </BrowserRouter>
