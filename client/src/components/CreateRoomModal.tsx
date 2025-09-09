@@ -5,7 +5,6 @@ import Button from "./ui/Button";
 import { X, Users, Lock, Globe, Code } from "lucide-react";
 import { useNavigate } from "react-router";
 import { fetchData } from "../services/backendApi";
-import { useAuth } from "../context/AuthContext";
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -16,7 +15,6 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
   const [roomName, setRoomName] = useState<string>("");
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -29,15 +27,14 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
     setIsSubmitting(true);
 
     try {
-      console.log("Creating room:", roomName);
       const response = await fetchData.post(`/rooms`, {
         name: roomName,
-        userId: user?.id,
-        isPrivate: isPrivate,
       });
 
       if (response.status === 200) {
         const roomId = response.data.roomID;
+        console.log("Room created with ID:", roomId);
+        onClose();
         navigate(`/rooms/${roomId}`);
       }
     } catch (err: unknown) {
@@ -116,11 +113,10 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       <button
                         type="button"
                         onClick={() => setIsPrivate(false)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border ${
-                          !isPrivate
-                            ? "bg-blue-600/20 border-blue-600 text-blue-400"
-                            : "bg-gray-800/50 border-gray-700 text-gray-400"
-                        } transition-colors`}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border ${!isPrivate
+                          ? "bg-blue-600/20 border-blue-600 text-blue-400"
+                          : "bg-gray-800/50 border-gray-700 text-gray-400"
+                          } transition-colors`}
                       >
                         <Globe className="w-4 h-4" />
                         <span>Public</span>
@@ -129,11 +125,10 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       <button
                         type="button"
                         onClick={() => setIsPrivate(true)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border ${
-                          isPrivate
-                            ? "bg-purple-600/20 border-purple-600 text-purple-400"
-                            : "bg-gray-800/50 border-gray-700 text-gray-400"
-                        } transition-colors`}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border ${isPrivate
+                          ? "bg-purple-600/20 border-purple-600 text-purple-400"
+                          : "bg-gray-800/50 border-gray-700 text-gray-400"
+                          } transition-colors`}
                       >
                         <Lock className="w-4 h-4" />
                         <span>Private</span>

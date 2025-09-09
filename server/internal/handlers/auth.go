@@ -1,14 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"geekCode/internal/auth"
 	"geekCode/internal/models"
 	"net/http"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	
 	// "geekCode/internal/config"
 )
 
@@ -116,16 +115,15 @@ func(h *Handler) GetProfile(c *gin.Context) {
 	fmt.Println("User ID from context: ", uid)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user id not found in context"})
+		return
 	}
 	userId := uid.(uint) //type assertion
 
 	var currentUser models.User
 	if err := h.DB.First(&currentUser, "id = ?", userId).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		
+		return
 	}
-
-
 
 	c.JSON(http.StatusOK, gin.H{
 		"currentUser": gin.H{
@@ -138,5 +136,4 @@ func(h *Handler) GetProfile(c *gin.Context) {
 			"updatedAt": currentUser.UpdatedAt,
 		},
 	})
-	
 }

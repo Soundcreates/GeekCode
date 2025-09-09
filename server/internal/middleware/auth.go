@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings" 	
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,8 @@ import (
 func AuthMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) { //anonymous function
 		authHeader := c.GetHeader("Authorization")
+		fmt.Printf("Auth Header: %s\n", authHeader) // Debugging line to print the auth header
+		//checking if auth header is present
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "missing auth header"})
 			return
@@ -19,13 +22,15 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 
 		parts := strings.Split(authHeader, " ") 
 		if len(parts) != 2 || parts[0] != "Bearer" {
+			fmt.Printf("Invalid Auth Header Format: %s\n", authHeader) // Debugging line to print the invalid format
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "invalid auth header"})
 			return
 		}
-
+		fmt.Printf("Token: %s\n", parts[1]) // Debugging line to print the token part	
 		userID, err := auth.ValidateToken(parts[1], secret)
 
 		if err != nil {
+			fmt.Printf("Token Validation Error: %v\n", err) // Debugging line to print the error
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error" : "invalid auth token"})
 			return
 		}

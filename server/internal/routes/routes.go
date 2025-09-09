@@ -6,6 +6,7 @@ import (
 	"geekCode/internal/middleware"
 
 	"geekCode/internal/ws"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -34,9 +35,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB ,jwtSecret string, cfg *config.Co
 	protected.GET("/profile", h.GetProfile)
 
 	//room routes
-	  protected.POST("/rooms", h.CreateRoom)        // Create room
-    protected.GET("/rooms", h.ListRooms)          // List user's rooms
-    protected.GET("/rooms/:id", h.GetRoom)
+	protected.POST("/rooms", h.CreateRoom)        // Create room
+	protected.GET("/rooms", h.ListRooms)          // List user's rooms
+	protected.GET("/rooms/:roomId", h.GetRoom)    // Get specific room
 
 
 

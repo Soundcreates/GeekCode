@@ -1,19 +1,21 @@
 package handlers
 
-
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
 	"geekCode/internal/models"
-// "gorm.io/gorm"
-"time"
-"fmt"
-"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	// "gorm.io/gorm"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type CreateRoomRequest struct {
 	Name   string `json:"name" binding:"required"`
-	UserID uint   `json:"userId" binding:"required"`
 }
 
 func (h *Handler) CreateRoom(c *gin.Context) {
@@ -21,13 +23,22 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req) ; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+		log.Println(err)
+		return
+	}
+
+	// Get user ID from JWT token via middleware
+	userID, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	room  := models.Room{
 		Name: req.Name,
-		CreatedBy: req.UserID,
+		CreatedBy: userID.(uint),
 		CreatedAt: time.Now(),
+		RoomID: uuid.New().String(),
 	}
 
 	if err := h.DB.Create(&room).Error; err != nil {
@@ -35,18 +46,18 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 		return
 	}
 
-	member := models.RoomMember {
-		RoomID: room.ID,
-		UserID: req.UserID,
-		JoinedAt: time.Now(),
-	}
+	// member := models.Client{
+	// 	RoomID: room.RoomID,
+	// 	UserID: req.UserID,
+	// 	JoinedAt: time.Now(),
+	// }
 
-	if err := h.DB.Create(&member).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : "failed to add creator as member"})
-		return
-	}
+	// if err := h.DB.Create(&member).Error; err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error" : "failed to add creator as member"})
+	// 	return
+	// }
 
-	c.JSON(http.StatusOK, gin.H{"roomID" : room.ID, "link" : "/rooms/" +fmt.Sprint(room.ID)})
+	c.JSON(http.StatusOK, gin.H{"roomID" : room.ID, "link" : "/rooms/" +fmt.Sprint(room.RoomID)})
 }
 
 func (h *Handler) ListRooms(c *gin.Context) {
@@ -58,7 +69,7 @@ func (h *Handler) ListRooms(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-if err := h.DB.Where("CreatedBy = ?", userId).Limit(limit).Find(&rooms).Error; err !=nil {
+if err := h.DB.Where("created_by = ?", userId).Limit(limit).Find(&rooms).Error; err !=nil {
 	c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to fetch rooms!"})
 	return
 }
@@ -77,20 +88,20 @@ func (h *Handler) GetRoom(c *gin.Context){
 	}
 	var room models.Room
 
-	if err := h.DB.Where("ID = ? AND CreatedBy = ?", roomId,userId).First(&room).Error; err != nil {
+	if err := h.DB.Where("room_id = ? AND created_by = ?", roomId, userId).First(&room).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Room not found!"})
 		return
 	}
 	
 	//Now returning the specific rooms members
-	var roomMembers []models.RoomMember
+	// var roomMembers []models.Client
 
-	if err := h.DB.Where("RoomID = ?", roomId).Find(&roomMembers).Error ; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"Error": "The room has no members!"})
-		return
-	}
+	// if err := h.DB.Where("RoomID = ?", roomId).Find(&roomMembers).Error ; err != nil {
+	// 	c.JSON(http.StatusNotFound, gin.H{"Error": "The room has no members!"})
+	// 	return
+	// }
 
 
-	c.JSON(http.StatusOK , gin.H{"room" : room, "members" : roomMembers})
+	c.JSON(http.StatusOK , gin.H{"room" : room})
 
 }
