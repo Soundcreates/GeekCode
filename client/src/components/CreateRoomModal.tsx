@@ -32,10 +32,10 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
       });
 
       if (response.status === 200) {
-        const roomId = response.data.roomID;
-        console.log("Room created with ID:", roomId);
+        const roomLink = response.data.link;
+        console.log("Room created with ID:", roomLink);
         onClose();
-        navigate(`/rooms/${roomId}`);
+        navigate(`/rooms/${roomLink}`);
       }
     } catch (err: unknown) {
       console.log(

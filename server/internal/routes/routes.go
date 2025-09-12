@@ -6,7 +6,7 @@ import (
 	"geekCode/internal/middleware"
 
 	"geekCode/internal/ws"
-
+	
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB ,jwtSecret string, cfg *config.Co
 
 	//for heallth check
 	api.GET("/ping", handlers.Ping)
-	api.GET("/ws/:roomId", ws.HandleWebSocket)
+	api.GET("/ws/:roomId", ws.HandleWebSocket) //websocket route
 
 	//for auth
 	auth := api.Group("/auth")
