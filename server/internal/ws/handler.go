@@ -1,221 +1,160 @@
-package ws 
+package ws
 
-import(
-	"github.com/gorilla/websocket"
-	// "gorm.io/gorm"
-	"net/http"
-	"github.com/gin-gonic/gin"
-	"fmt"
-	// "geekCode/internal/models"
-	"sync"
-	"log"
+import (
 	"encoding/json"
-	"github.com/google/uuid"
+	"log"
+	"net/http"
+	"sync"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
-
-//defining structs here
-
-type Message struct {
-	Type string `json:"type"`
-	Payload json.RawMessage `json:"payload"`
-}
-
 type Client struct {
-	Conn *websocket.Conn
-	Room *Room
-	Send chan []byte
-	UserID string
+	conn *websocket.Conn
+	room string
+	user string
 }
 
-type Room struct {
-	ID string
-	Clients map[*Client]bool
-	Broadcast chan []byte
-	Register chan *Client
-	Unregister chan *Client
-	Mutex sync.Mutex
-}
-
-
-//now our global state is herre
-var upgrader = websocket.Upgrader {
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
 
+var rooms = make(map[string]map[*Client]bool) // roomId to clients
+var roomsMutex = &sync.Mutex{}
 
-var rooms = make(map[string]*Room)
-var roomsMutex sync.Mutex
-
-//room methods are now here
-
-func NewRoom(id string) *Room {
-	return  &Room{
-		ID: id,
-		Clients: make(map[*Client]bool),
-		Broadcast: make(chan []byte),
-		Register: make(chan *Client),
-		Unregister: make(chan *Client),
-	}
+type Message struct {
+	Action string          `json:"action"`
+	Room   string          `json:"room,omitempty"`
+	User   string          `json:"user,omitempty"`
+	Change json.RawMessage `json:"change,omitempty"`
 }
 
-func (room *Room) Run() {
+func HandleWebSocket(c *gin.Context) {
+	roomId := c.Param("roomId")
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println("Error upgrading to websocket:", err)
+		return
+	}
+
+	client := &Client{
+		conn: conn,
+		room: roomId,
+	}
+
+	registerClient(client)
+
+	go client.readMessages()
+
+	select {}
+}
+
+func registerClient(c *Client) {
+	roomsMutex.Lock()
+	defer roomsMutex.Unlock()
+
+	if rooms[c.room] == nil {
+		rooms[c.room] = make(map[*Client]bool)
+	}
+
+	rooms[c.room][c] = true
+	log.Printf("Client joined room %s, total clients: %d\n", c.room, len(rooms[c.room]))
+}
+
+func unregisterClient(c *Client) {
+	roomsMutex.Lock()
+	defer roomsMutex.Unlock()
+
+	clients, found := rooms[c.room]
+	if !found {
+		return
+	}
+
+	delete(clients, c)
+
+	if len(clients) == 0 {
+		delete(rooms, c.room)
+	}
+
+	log.Printf("Client left room %s, total clients: %d\n", c.room, len(clients))
+
+	c.conn.Close()
+}
+
+func (c *Client) readMessages() {
+	defer unregisterClient(c) // unregister and close connection
+
 	for {
-		select{
-		case client := <-room.Register:
-				room.registerClient(client)
-		
-	case client := <-room.Unregister:
-		room.unregisterClient(client)
+		_, msgBytes, err := c.conn.ReadMessage()
+		if err != nil {
+			log.Println("Error reading message:", err)
+			break
+		}
 
-	case message:= <-room.Broadcast:
-		room.broadcastMessage(message)
+		var msg Message
+		if err := json.Unmarshal(msgBytes, &msg); err != nil {
+			log.Println("Error unmarshalling message:", err)
+			continue
+		}
+
+		switch msg.Action {
+		case "join":
+			c.user = msg.User
+			c.room = msg.Room
+			registerClient(c)
+			broadcastSystemMessage(c.room, c.user+" joined the room", c)
+
+		case "edit":
+			broadcastToRoom(msg.Room, msgBytes, c)
+
+		case "leave":
+			broadcastSystemMessage(c.room, c.user+" left the room", c)
+			unregisterClient(c)
+			return
+
+		default:
+			log.Printf("Unknown action: %s\n", msg.Action)
+		}
 	}
 }
-}
 
-
-func (room *Room) registerClient(client *Client) {
-	room.Mutex.Lock()
-	defer room.Mutex.Unlock()
-	room.Clients[client] = true
-	log.Printf("Client %s joined room %s", client.UserID, room.ID)
-}
-
-func (room *Room) unregisterClient(client *Client) {
-	room.Mutex.Lock() 
-	defer room.Mutex.Unlock()
-	if _, ok := room.Clients[client]; ok {
-		delete(room.Clients, client)
-		log.Printf("Client %s has left room %s", client.UserID, room.ID)
-		room.notifyUserListChanged()
-	}
-
-	if len(room.Clients) == 0{
-		log.Printf("Room %s is empty, deleting.", room.ID)
-		roomsMutex.Lock()
-		delete(rooms, room.ID)
+func broadcastToRoom(roomId string, msg []byte, sender *Client) {
+	roomsMutex.Lock()
+	clients, found := rooms[roomId]
+	if !found {
 		roomsMutex.Unlock()
 		return
 	}
-}
 
-func (room *Room) broadcastMessage(message []byte) {
-	room.Mutex.Lock()
-	defer room.Mutex.Unlock()
-	for client := range room.Clients {
-		select{ 
-		case client.Send <- message:
-		default:
-			close(client.Send)
-			delete(room.Clients, client)
+	// Copy clients to avoid holding lock while writing
+	targets := make([]*Client, 0, len(clients))
+	for client := range clients {
+		if client != sender {
+			targets = append(targets, client)
+		}
+	}
+	roomsMutex.Unlock()
+
+	for _, client := range targets {
+		if err := client.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+			log.Println("Broadcast write error:", err)
 		}
 	}
 }
 
-
-func (room *Room) notifyUserListChanged() {
-	var userIDs []string
-	for client:= range room.Clients {
-		userIDs= append(userIDs, client.UserID)
+func broadcastSystemMessage(roomId, text string, exclude *Client) {
+	sysMsg := Message{
+		Action: "system",
+		Room:   roomId,
+		Change: json.RawMessage(`{"text":"` + text + `"}`),
 	}
+	msgBytes, _ := json.Marshal(sysMsg)
 
-	payload, _ := json.Marshal(userIDs)
-	msg := Message {
-		Type: "user_list_update",
-		Payload : payload,
-	}
-
-	msgBytes, _ := json.Marshal(msg)
-	room.broadcastMessage(msgBytes)
+	broadcastToRoom(roomId, msgBytes, exclude)
 }
-
-//now client methods
-
-func (c *Client) ReadPump() {
-	defer func() {
-		c.Room.Unregister <- c
-		c.Conn.Close()
-	}() 
-	for {
-		_, messageBytes, err := c.Conn.ReadMessage()
-		if err != nil {
-			log.Printf("error reading message: %v", err)
-			break
-		}
-		
-		var msg Message
-		if err := json.Unmarshal(messageBytes, &msg); err != nil {
-			log.Printf("error unmarshalling message: %v", err)
-			continue
-		}
-		
-		var payloadMap map[string]interface{}
-		json.Unmarshal(msg.Payload, &payloadMap)
-		payloadMap["senderId"] = c.UserID
-
-		newPayload , _ := json.Marshal(payloadMap)
-		msg.Payload = newPayload
-
-		finalMessage, _ := json.Marshal(msg)
-		c.Room.Broadcast <- finalMessage
-	}
-}
-
-func (c *Client) WritePump() {
-	defer func() {
-		c.Conn.Close()
-	}()
-	for message := range c.Send {
-		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			log.Printf("error writing message: %v", err)
-			break
-		}
-	}
-}
-
-//now handling the gin part
-
-func HandleWebSocket(c *gin.Context) {
-	fmt.Println("Handling WebSocket connection")
-	roomId := c.Param("roomId")
-	//i will  be following some steps
-	//step1 - create or find a room
-	roomsMutex.Lock()
-	room , ok := rooms[roomId] //checking if room exists or not
-	if !ok {
-		log.Printf("Creating new room: %s", roomId)
-		room = NewRoom(roomId) //just making a new room if it does not exist
-		rooms[roomId] = room //assinging that room to that index
-
-		go room.Run() //running the room in a go routine
-	}
-
-	//step2- upgrade the connection to websocket
-	conn, err :=upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil{
-		log.Printf("Failed to upgrade connection: %v", err)
-		return
-	}
-
-	//step3-to register the new client with rooms hub
-	client := &Client {
-		Conn: conn,
-		Room: room,
-		Send: make(chan []byte, 256), //buffering the channel for outgoing messages
-		UserID: uuid.New().String(),
-	}
-
-	//step4- basically just send the client to the clients room and then register in it
-	client.Room.Register <- client
-
-	//step5 - start the clients read and write pummps in seperate goroutines
-	//this lets the handler to return while the connection remains up and active
-
-	go client.WritePump()
-	go client.ReadPump()
-}
-
-
