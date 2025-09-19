@@ -2,13 +2,22 @@ package models
 
 import "time"
 
+type Status int
+
+const (
+    Active Status = iota
+    Ended
+    Archived
+)
+
 type Room struct {
     ID        uint      `gorm:"primaryKey"`
-    Name      string    `gorm:"uniqueIndex;not null"`
+    Name      string    `gorm:"not null"`
     RoomID    string    `gorm:"uniqueIndex;not null"`
     CreatedAt time.Time
     CreatedBy uint      // Match User.ID type
     Creator   User      `gorm:"foreignKey:CreatedBy;references:ID"`
+    Status  Status    `gorm:"default:0"` // Default to Active
 }
 
 type Client struct {

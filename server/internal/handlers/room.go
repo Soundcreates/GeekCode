@@ -1,160 +1,107 @@
-package ws
+package handlers
 
 import (
-	"encoding/json"
-	"log"
+	"geekCode/internal/models"
 	"net/http"
-	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
+
+	// "gorm.io/gorm"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/google/uuid"
 )
 
-type Client struct {
-	conn *websocket.Conn
-	room string
-	user string
+type CreateRoomRequest struct {
+	Name   string `json:"name" binding:"required"`
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+func (h *Handler) CreateRoom(c *gin.Context) {
+	var req CreateRoomRequest
+
+	if err := c.ShouldBindJSON(&req) ; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+		log.Println(err)
+		return
+	}
+
+	// Get user ID from JWT token via middleware
+	userID, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	room  := models.Room{
+		Name: req.Name,
+		CreatedBy: userID.(uint),
+		CreatedAt: time.Now(),
+		RoomID: uuid.New().String(),
+	}
+
+	if err := h.DB.Create(&room).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : "failed to create room"})
+		return
+	}
+
+	// member := models.Client{
+	// 	RoomID: room.RoomID,
+	// 	UserID: req.UserID,
+	// 	JoinedAt: time.Now(),
+	// }
+
+	// if err := h.DB.Create(&member).Error; err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error" : "failed to add creator as member"})
+	// 	return
+	// }
+
+	c.JSON(http.StatusOK, gin.H{"roomID" : room.ID, "link" : "/code/" +fmt.Sprint(room.RoomID)})
 }
 
-var rooms = make(map[string]map[*Client]bool) // roomId to clients
-var roomsMutex = &sync.Mutex{}
-
-type Message struct {
-	Action string          `json:"action"`
-	Room   string          `json:"room,omitempty"`
-	User   string          `json:"user,omitempty"`
-	Change json.RawMessage `json:"change,omitempty"`
+func (h *Handler) ListRooms(c *gin.Context) {
+	const limit = 5
+	var rooms []models.Room
+	userId, exists := c.Get("userId")
+	if !exists {
+		log.Println("User doesnt exist!")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+if err := h.DB.Where("created_by = ?", userId).Limit(limit).Find(&rooms).Error; err !=nil {
+	c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to fetch rooms!"})
+	return
 }
 
-func HandleWebSocket(c *gin.Context) {
+	c.JSON(http.StatusOK, rooms)
+
+
+}
+
+func (h *Handler) GetRoom(c *gin.Context){
 	roomId := c.Param("roomId")
-
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println("Error upgrading to websocket:", err)
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"Error": "User not authenticated!"})
 		return
 	}
+	var room models.Room
 
-	client := &Client{
-		conn: conn,
-		room: roomId,
-	}
-
-	registerClient(client)
-
-	go client.readMessages()
-
-	select {}
-}
-
-func registerClient(c *Client) {
-	roomsMutex.Lock()
-	defer roomsMutex.Unlock()
-
-	if rooms[c.room] == nil {
-		rooms[c.room] = make(map[*Client]bool)
-	}
-
-	rooms[c.room][c] = true
-	log.Printf("Client joined room %s, total clients: %d\n", c.room, len(rooms[c.room]))
-}
-
-func unregisterClient(c *Client) {
-	roomsMutex.Lock()
-	defer roomsMutex.Unlock()
-
-	clients, found := rooms[c.room]
-	if !found {
+	if err := h.DB.Where("room_id = ? AND created_by = ?", roomId, userId).First(&room).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Room not found!"})
 		return
 	}
+	
+	//Now returning the specific rooms members
+	// var roomMembers []models.Client
 
-	delete(clients, c)
+	// if err := h.DB.Where("RoomID = ?", roomId).Find(&roomMembers).Error ; err != nil {
+	// 	c.JSON(http.StatusNotFound, gin.H{"Error": "The room has no members!"})
+	// 	return
+	// }
 
-	if len(clients) == 0 {
-		delete(rooms, c.room)
-	}
 
-	log.Printf("Client left room %s, total clients: %d\n", c.room, len(clients))
+	c.JSON(http.StatusOK , gin.H{"room" : room})
 
-	c.conn.Close()
-}
-
-func (c *Client) readMessages() {
-	defer unregisterClient(c) // unregister and close connection
-
-	for {
-		_, msgBytes, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Println("Error reading message:", err)
-			break
-		}
-
-		var msg Message
-		if err := json.Unmarshal(msgBytes, &msg); err != nil {
-			log.Println("Error unmarshalling message:", err)
-			continue
-		}
-
-		switch msg.Action {
-		case "join":
-			c.user = msg.User
-			c.room = msg.Room
-			registerClient(c)
-			broadcastSystemMessage(c.room, c.user+" joined the room", c)
-
-		case "edit":
-			broadcastToRoom(msg.Room, msgBytes, c)
-
-		case "leave":
-			broadcastSystemMessage(c.room, c.user+" left the room", c)
-			unregisterClient(c)
-			return
-
-		default:
-			log.Printf("Unknown action: %s\n", msg.Action)
-		}
-	}
-}
-
-func broadcastToRoom(roomId string, msg []byte, sender *Client) {
-	roomsMutex.Lock()
-	clients, found := rooms[roomId]
-	if !found {
-		roomsMutex.Unlock()
-		return
-	}
-
-	// Copy clients to avoid holding lock while writing
-	targets := make([]*Client, 0, len(clients))
-	for client := range clients {
-		if client != sender {
-			targets = append(targets, client)
-		}
-	}
-	roomsMutex.Unlock()
-
-	for _, client := range targets {
-		if err := client.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-			log.Println("Broadcast write error:", err)
-		}
-	}
-}
-
-func broadcastSystemMessage(roomId, text string, exclude *Client) {
-	sysMsg := Message{
-		Action: "system",
-		Room:   roomId,
-		Change: json.RawMessage(`{"text":"` + text + `"}`),
-	}
-	msgBytes, _ := json.Marshal(sysMsg)
-
-	broadcastToRoom(roomId, msgBytes, exclude)
 }

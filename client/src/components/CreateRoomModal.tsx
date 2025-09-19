@@ -35,7 +35,7 @@ function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
         const roomLink = response.data.link;
         console.log("Room created with ID:", roomLink);
         onClose();
-        navigate(`/rooms/${roomLink}`);
+        navigate(`${roomLink}`);
       }
     } catch (err: unknown) {
       console.log(

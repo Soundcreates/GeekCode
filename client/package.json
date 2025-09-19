@@ -21,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.12",
+    "lib0": "^0.2.114",
     "lucide-react": "^0.540.0",
     "monaco-editor": "^0.52.2",
     "motion": "^12.23.12",
@@ -33,6 +34,7 @@
     "uuid": "^11.1.0",
     "y-monaco": "^0.1.6",
     "y-webrtc": "^10.3.0",
+    "y-websocket": "^3.0.0",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
