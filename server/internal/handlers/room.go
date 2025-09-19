@@ -33,11 +33,18 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
+	//finding the user for their name
+	var user models.User
+	if err  := h.DB.First(&user, userID.(uint)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : "User not found"})
+		return
+	}
 
 	room  := models.Room{
 		Name: req.Name,
-		CreatedBy: userID.(uint),
+		CreatedBy: user.Username,
 		CreatedAt: time.Now(),
+		Creator: user,
 		RoomID: uuid.New().String(),
 	}
 
@@ -74,7 +81,9 @@ if err := h.DB.Where("created_by = ?", userId).Limit(limit).Find(&rooms).Error; 
 	return
 }
 
-	c.JSON(http.StatusOK, rooms)
+	c.JSON(http.StatusOK, gin.H{
+		"rooms" : rooms,
+	})
 
 
 }

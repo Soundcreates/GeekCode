@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
-
+	"time"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -14,8 +14,16 @@ type Client struct {
 	conn *websocket.Conn
 	room string
 	user string
+	userID string
+	joinedAt time.Time
 }
 
+type ClientInfo struct {
+	User string `json:"user"`
+	UserID string `json:"userId"`
+	JoinedAt time.Time `json:"joinedAt"`
+	isOnline bool `json:"isOnline"`
+}
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,

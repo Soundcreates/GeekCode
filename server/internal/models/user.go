@@ -9,6 +9,6 @@ type User struct {
 	Username  string    `gorm:"unique;not null"`
 	Email     string    `gorm:"unique;not null"`
 	Password  string    `gorm:"not null"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
+	CreatedAt time.Time `gorm:"autoCr]eateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }

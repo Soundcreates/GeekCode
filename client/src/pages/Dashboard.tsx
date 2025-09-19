@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FC } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "../components/ui/Card";
@@ -14,15 +14,17 @@ import {
   Play,
   Pause,
   Globe,
-  Lock,
   MessageSquare,
   GitBranch,
   Folder,
 } from "lucide-react";
 import CreateRoomModal from "../components/CreateRoomModal";
+import { useRoom, type Room } from "../context/RoomContext";
 
 const Dashboard: FC = () => {
   const [openRoomModal, setOpenRoomModal] = useState<boolean>(false);
+  const [recentRooms, setRecentRooms] = useState<Room[]>([]);
+  const { getRooms } = useRoom() || {};
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -42,6 +44,20 @@ const Dashboard: FC = () => {
       y: 0,
     },
   };
+
+  useEffect(() => {
+    const fetchRecentRooms = async () => {
+      if (getRooms) {
+        const rooms = await getRooms();
+        if (rooms) {
+          setRecentRooms(rooms.slice(0, 4)); // Gets the 4 most recent rooms
+        }
+        console.log("Recent rooms are: ", rooms);
+      }
+    }
+
+    fetchRecentRooms();
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col relative overflow-hidden">
@@ -239,145 +255,93 @@ const Dashboard: FC = () => {
           transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="md:col-span-4 row-span-1 group relative overflow-hidden"
         >
-          <Card>
-            <CardContent className="p-8 h-full relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {recentRooms.length === 0 || !recentRooms ? (
+            <Card>
+              <CardContent className="p-8 h-full relative flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <p className="text-gray-500 italic relative z-10">No recent rooms found.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-8 h-full relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-              <div className="relative z-10 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-white" />
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold">Recent Rooms</h2>
                     </div>
-                    <h2 className="text-2xl font-bold">Recent Rooms</h2>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    className="text-gray-400 hover:text-white"
-                  >
-                    View All
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-                  {[
-                    {
-                      name: "React Dashboard",
-                      members: 3,
-                      status: "active",
-                      type: "Frontend",
-                      lastActive: "2 mins ago",
-                      privacy: "public",
-                      notes: 8,
-                    },
-                    {
-                      name: "API Development",
-                      members: 2,
-                      status: "active",
-                      type: "Backend",
-                      lastActive: "15 mins ago",
-                      privacy: "private",
-                      notes: 12,
-                    },
-                    {
-                      name: "Mobile App UI",
-                      members: 4,
-                      status: "paused",
-                      type: "Mobile",
-                      lastActive: "1 hour ago",
-                      privacy: "public",
-                      notes: 5,
-                    },
-                    {
-                      name: "Database Design",
-                      members: 1,
-                      status: "waiting",
-                      type: "Database",
-                      lastActive: "3 hours ago",
-                      privacy: "private",
-                      notes: 3,
-                    },
-                  ].map((room, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.03, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                      className="group/room"
+                    <Button
+                      variant="ghost"
+                      className="text-gray-400 hover:text-white"
                     >
-                      <Card>
-                        <CardContent className="p-6 flex flex-col h-full relative">
-                          <div className="absolute top-4 right-4 flex items-center gap-2">
-                            {room.privacy === "private" ? (
-                              <Lock className="w-4 h-4 text-gray-400" />
-                            ) : (
+                      View All
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                    {recentRooms.map((room, i) => (
+                      <motion.div
+                        key={i}
+                        whileHover={{ scale: 1.03, y: -4 }}
+                        transition={{ duration: 0.2 }}
+                        className="group/room"
+                      >
+                        <Card>
+                          <CardContent className="p-6 flex flex-col h-full relative">
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
                               <Globe className="w-4 h-4 text-gray-400" />
-                            )}
-                            <div
-                              className={`w-3 h-3 rounded-full ${
-                                room.status === "active"
-                                  ? "bg-green-500 animate-pulse"
-                                  : room.status === "paused"
-                                  ? "bg-yellow-500"
-                                  : "bg-gray-500"
-                              }`}
-                            ></div>
-                          </div>
-
-                          <div className="mb-4">
-                            <h3 className="text-lg font-bold mb-2 group-hover/room:text-blue-400 transition-colors">
-                              {room.name}
-                            </h3>
-                            <div
-                              className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${
-                                room.type === "Frontend"
-                                  ? "bg-blue-500/20 text-blue-400"
-                                  : room.type === "Backend"
-                                  ? "bg-green-500/20 text-green-400"
-                                  : room.type === "Mobile"
-                                  ? "bg-purple-500/20 text-purple-400"
-                                  : "bg-orange-500/20 text-orange-400"
-                              }`}
-                            >
-                              {room.type}
-                            </div>
-                          </div>
-
-                          <div className="space-y-3 mb-4 flex-1">
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-400 text-sm">
-                                {room.members} collaborators
-                              </span>
+                              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-400 text-sm">
-                                {room.notes} shared notes
-                              </span>
+                            <div className="mb-4">
+                              <h3 className="text-lg font-bold mb-2 group-hover/room:text-blue-400 transition-colors">
+                                {room.Name}
+                              </h3>
+                              <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-400">
+                                Coding Room
+                              </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-400 text-sm">
-                                {room.lastActive}
-                              </span>
-                            </div>
-                          </div>
+                            <div className="space-y-3 mb-4 flex-1">
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-400 text-sm">
+                                  Room #{room.RoomID.slice(0, 8)}
+                                </span>
+                              </div>
 
-                          <Button className="w-full group-hover/room:shadow-lg transition-shadow">
-                            {room.status === "active"
-                              ? "Join Session"
-                              : "Enter Room"}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-400 text-sm">
+                                  Created by {room.CreatedBy || 'Unknown'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-400 text-sm">
+                                  {new Date(room.CreatedAt.toString()).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            <Button className="w-full group-hover/room:shadow-lg transition-shadow">
+                              Enter Room
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </motion.div>
 
         {/* Collaboration Stats */}

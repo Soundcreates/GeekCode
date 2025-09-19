@@ -15,7 +15,7 @@ type Room struct {
     Name      string    `gorm:"not null"`
     RoomID    string    `gorm:"uniqueIndex;not null"`
     CreatedAt time.Time
-    CreatedBy uint      // Match User.ID type
+    CreatedBy string    // the username of the user
     Creator   User      `gorm:"foreignKey:CreatedBy;references:ID"`
     Status  Status    `gorm:"default:0"` // Default to Active
 }
