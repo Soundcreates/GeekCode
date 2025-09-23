@@ -146,6 +146,7 @@ func (c *Client) readMessages() {
 
         case "leave":
             broadcastSystemMessage(c.room, c.user+" left the room", c)
+						unregisterClient(c)
             return
 
         default:
