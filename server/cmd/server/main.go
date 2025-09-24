@@ -2,7 +2,7 @@
 
 import (
 	
-	"os"
+	
 	"log"
 	"github.com/gin-gonic/gin"
 	"geekCode/internal/config"
