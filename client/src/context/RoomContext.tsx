@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, createContext, useRef, useCallback } from 'react'
+import React, { useContext, createContext } from 'react'
 import { fetchData } from '../services/backendApi';
 export interface User {
   id: number;
@@ -39,6 +39,22 @@ export const RoomContext = createContext<RoomContextType | undefined>(
 
 
 export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const createRoom = async (roomData: CreateRoomRequest): Promise<CreateRoomRequest | undefined> => {
+    try {
+      const response = await fetchData.post("/rooms", roomData);
+      if (response.status === 201) {
+        return response.data as CreateRoomRequest;
+      }
+    } catch (err: string | any) {
+      console.log("Error happened at createRoom function in roomContext file!", err);
+      if (err instanceof Error) {
+        console.log("Error happened at createRoom function in roomContext file!", err.message);
+      } else {
+        console.log("Error happened at createRoom function in roomContext file!", err);
+      }
+    }
+  };
+
   const getRooms = async (): Promise<Room[] | undefined> => {
     try {
       const response = await fetchData.get("/rooms");
@@ -47,7 +63,12 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return response.data.rooms as Room[];
       }
     } catch (err: string | any) {
-      console.log("Error happened at getRooms function in roomContext file!", err.message);
+      console.log("Error happened at getRooms function in roomContext file!", err);
+      if (err instanceof Error) {
+        console.log("Error happened at getRooms function in roomContext file!", err.message);
+      } else {
+        console.log("Error happened at getRooms function in roomContext file!", err);
+      }
     }
   }
 
@@ -58,16 +79,21 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return response.data.room as Room;
       }
     } catch (err: string | any) {
-      console.log("Error happened at getRoomById function in roomContext file!", err.message);
+      console.log("Error happened at getRoomById function in roomContext file!", err);
+      if (err instanceof Error) {
+        console.log("Error happened at getRoomById function in roomContext file!", err.message);
+      } else {
+        console.log("Error happened at getRoomById function in roomContext file!", err);
+      }
 
     }
   }
 
   return (
-    <RoomContext.Provider value={{ getRooms, getRoomById }}>
+    <RoomContext.Provider value={{ createRoom, getRooms, getRoomById }}>
       {children}
     </RoomContext.Provider>
-  )
+  );
 }
 
 export const useRoom = () => {

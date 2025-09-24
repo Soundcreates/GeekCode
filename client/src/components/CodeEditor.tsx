@@ -60,7 +60,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log(' WebSocket connected to room:', roomName);
+      console.log('✅ WebSocket connected to room:', roomName);
       setConnectionStatus('connected');
 
       // Join the room
@@ -88,7 +88,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
     ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
-        console.log(' WebSocket message received:', message);
+        console.log('📨 WebSocket message received:', message);
 
         switch (message.action) {
           case 'room_info':
@@ -108,11 +108,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
             break;
 
           case 'system':
-            console.log(' System message:', message.change);
+            console.log('📢 System message:', message.change);
             break;
 
           case 'edit':
-            console.log(' Edit message received:', message.change);
+            console.log('✏️ Edit message received:', message.change);
             // Handle code edits from other users
             if (message.change && message.user !== currentUser.username) {
               // Update the editor with changes from other users
@@ -121,10 +121,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
             break;
 
           default:
-            console.log(' Unknown message action:', message.action);
+            console.log('❓ Unknown message action:', message.action);
         }
       } catch (error) {
-        console.error(' Error parsing WebSocket message:', error);
+        console.error('❌ Error parsing WebSocket message:', error);
       }
     };
 
@@ -145,7 +145,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
     };
 
     ws.onerror = (error) => {
-      console.error(' WebSocket error:', error);
+      console.error('❌ WebSocket error:', error);
       setConnectionStatus('error');
     };
 
@@ -181,17 +181,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
   // Send WebSocket message
   const sendWebSocketMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log(' Sending WebSocket message:', message);
+      console.log('📤 Sending WebSocket message:', message);
       wsRef.current.send(JSON.stringify(message));
     } else {
-      console.warn(' WebSocket is not connected');
+      console.warn('⚠️ WebSocket is not connected');
     }
   }, []);
 
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
-    console.log(' Editor mounted');
+    console.log('📝 Editor mounted');
   };
 
   const handleTabClick = (f: FileType) => {
@@ -220,7 +220,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
       }
     });
 
-    console.log(" Code changed by:", currentUser?.username);
+    console.log("✏️ Code changed by:", currentUser?.username);
   };
 
   const handleLanguageSelect = (language: string) => {

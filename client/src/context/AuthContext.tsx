@@ -25,7 +25,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User>();
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -38,8 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(response.data.currentUser);
           console.log("Current user: ", response.data.currentUser);
         }
-      } catch (err: any) {
-        console.error(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error(err.message);
+        } else {
+          console.error(err);
+        }
       } finally {
         setIsLoading(false);
       }

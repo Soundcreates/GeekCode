@@ -87,6 +87,7 @@ func registerClient(c *Client) {
 }
 
 func unregisterClient(c *Client) {
+    //handling the room mutex
     roomsMutex.Lock()
     defer roomsMutex.Unlock()
 
