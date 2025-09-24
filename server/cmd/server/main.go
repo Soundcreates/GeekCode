@@ -35,11 +35,16 @@ func main () {
 	}
 
 
+	jwtSecret := config.GetEnv("JWTSecret", "")
 
-	routes.RegisterRoutes(r, db, cfg.JWTSecret, cfg)
+	if jwtSecret == "" {
+		log.Fatal("Jwtsecret is needed but hasn't been set up yet")
+	}
+
+	routes.RegisterRoutes(r, db, jwtSecret, cfg)
 	
 
-	port := os.Getenv("PORT")
+	port := config.GetEnv("PORT", "8080")
 	if port == "" {
 		port = "8080"
 	}
