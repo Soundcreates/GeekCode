@@ -1,14 +1,14 @@
 import React from "react";
 
 import { BrowserRouter, Routes, Route } from "react-router";
-import CodeLayout from "./pages/CodeLayout.tsx";
-import { CodeProvider } from "./context/globalCode.tsx";
+import CodeLayout from "./pages/CodeLayout";
+import { CodeProvider } from "./context/globalCode";
 import Landing from "./pages/Landing.js";
-import Login from "./pages/auth/Login.tsx";
-import Register from "./pages/auth/Register.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
-import Rooms from "./pages/Rooms.tsx";
-import { RoomProvider } from "./context/RoomContext.tsx";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Dashboard from "./pages/Dashboard";
+import Rooms from "./pages/Rooms";
+import { RoomProvider } from "./context/RoomContext";
 function App() {
   return (
     <BrowserRouter>
