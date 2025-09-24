@@ -36,3 +36,13 @@ func LoadConfig() *Config {
 		PROD_URL: os.Getenv("PROD_URL"),
 	}
 }
+
+func GetEnv(key string, fallback string) string {
+	val := os.Getenv(key)
+
+	if(val == "" ){
+		return fallback
+	}
+	return val
+
+}

@@ -186,6 +186,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
     } else {
       console.warn('⚠️ WebSocket is not connected');
     }
+
   }, []);
 
   const handleEditorDidMount: OnMount = (editor) => {
