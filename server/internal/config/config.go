@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
-	"os"
 	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -19,9 +20,11 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+	// Only load .env file in development (when file exists)
+	// In production (like Render), environment variables are set directly
 	err := godotenv.Load(".env")
-	if err!=nil {
-		log.Fatal("Error loading .env file")
+	if err != nil {
+		log.Println("Warning: .env file not found, using system environment variables")
 	}
 
 	return &Config{

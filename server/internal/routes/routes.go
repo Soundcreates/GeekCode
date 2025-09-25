@@ -6,12 +6,13 @@ import (
 	"geekCode/internal/middleware"
 
 	"geekCode/internal/ws"
-	
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, db *gorm.DB ,jwtSecret string, cfg *config.Config) {
+func RegisterRoutes(r *gin.Engine, db *gorm.DB, jwtSecret string) {
+	cfg := config.LoadConfig()
 	api := r.Group("/api")
 
 	//inits handlers w db
