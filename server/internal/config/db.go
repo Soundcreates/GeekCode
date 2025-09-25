@@ -3,16 +3,24 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"geekCode/internal/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
 )
 
-func ConnectDB(cfg *Config) (*gorm.DB, error) {
+func ConnectDB() (*gorm.DB, error) {
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	name := os.Getenv("DB_NAME")
+
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable ",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
+		host, port, user, password, name)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	
 	if err != nil {

@@ -1,21 +1,18 @@
- package main
+package main
 
 import (
-	
-	
-	"log"
-	"github.com/gin-gonic/gin"
 	"geekCode/internal/config"
 	"geekCode/internal/routes"
-	"github.com/gin-contrib/cors"
+	"log"
 	"time"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main () {
 	cfg := config.LoadConfig()
 	r := gin.Default()
-
 
 	//handling cors
 	corsConfig := cors.Config{
@@ -29,22 +26,18 @@ func main () {
 
 	r.Use(cors.New(corsConfig))
 
-	db,err := config.ConnectDB(cfg)
+	db,err := config.ConnectDB()
 	if err!=nil {
 		log.Fatal("Failed to connect to database ", err)
 	}
 
-
-	jwtSecret := config.GetEnv("JWTSecret", "")
-
-	if jwtSecret == "" {
+	if cfg.JWTSecret == "" {
 		log.Fatal("Jwtsecret is needed but hasn't been set up yet")
 	}
 
-	routes.RegisterRoutes(r, db, jwtSecret, cfg)
+	routes.RegisterRoutes(r, db, cfg.JWTSecret)
 	
-
-	port := config.GetEnv("PORT", "8080")
+	port := cfg.Port
 	if port == "" {
 		port = "8080"
 	}

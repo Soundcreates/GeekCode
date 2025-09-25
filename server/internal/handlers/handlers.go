@@ -17,6 +17,6 @@ func Ping(c *gin.Context) {
 }
 
 func NewHandler(db *gorm.DB, cfg *config.Config) *Handler{
-	return &Handler{DB : db, cfg: cfg}
+	return &Handler{DB: db, cfg: cfg}
 }
 
