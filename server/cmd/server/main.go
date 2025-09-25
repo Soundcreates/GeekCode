@@ -4,6 +4,7 @@ import (
 	"geekCode/internal/config"
 	"geekCode/internal/routes"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -11,6 +12,11 @@ import (
 )
 
 func main () {
+	// Set Gin to release mode in production
+	if os.Getenv("GIN_MODE") == "" && os.Getenv("PORT") != "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	
 	cfg := config.LoadConfig()
 	r := gin.Default()
 
