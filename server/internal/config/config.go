@@ -27,8 +27,8 @@ func LoadConfig() *Config {
 		log.Println("Warning: .env file not found, using system environment variables")
 	}
 
-	return &Config{
-		Port:     os.Getenv("PORT"),
+	config := &Config{
+		Port:     GetEnv("PORT", "8080"),
 		DBHost:  os.Getenv("DB_HOST"),
 		DBPort:  os.Getenv("DB_PORT"),
 		DBUser:  os.Getenv("DB_USER"),
@@ -38,6 +38,12 @@ func LoadConfig() *Config {
 		FRONTEND_URL: os.Getenv("FRONTEND_URL"),
 		PROD_URL: os.Getenv("PROD_URL"),
 	}
+
+	// Log configuration (without sensitive data)
+	log.Printf("Configuration loaded - Port: %s, DB Host: %s, DB Name: %s", 
+		config.Port, config.DBHost, config.DBName)
+
+	return config
 }
 
 func GetEnv(key string, fallback string) string {
