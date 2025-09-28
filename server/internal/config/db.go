@@ -23,7 +23,11 @@ func ConnectDB() (*gorm.DB, error) {
 	}
 	
 	// Debug logging
-	log.Printf("Raw DATABASE_URL: %s", maskPassword(databaseURL))
+	if databaseURL != "" {
+		log.Printf("Raw DATABASE_URL: %s", maskPassword(databaseURL))
+	} else {
+		log.Printf("No DATABASE_URL or POSTGRES_URL found, using individual environment variables")
+	}
 	
 	var dsn string
 
@@ -36,8 +40,6 @@ func ConnectDB() (*gorm.DB, error) {
 			// Check if the URL is malformed (host is localhost but we have a different hostname in the string)
 			if parsedURL.Hostname() == "localhost" && strings.Contains(databaseURL, "dpg-") {
 				log.Printf("Detected malformed URL, attempting to fix...")
-				// This is likely a malformed URL where the hostname got mixed up
-				// Let's try to extract the correct components manually
 				dsn = fixMalformedURL(databaseURL)
 			} else {
 				// Normal URL parsing
@@ -54,13 +56,16 @@ func ConnectDB() (*gorm.DB, error) {
 				parsedURL.RawQuery = query.Encode()
 
 				dsn = parsedURL.String()
+				log.Printf("Using database URL from environment variable")
+				log.Printf("Database host: %s, port: %s", parsedURL.Hostname(), parsedURL.Port())
 			}
-			log.Printf("Using database URL from environment variable")
 		}
 	}
 
 	// If we don't have a valid DSN from URL parsing, try individual env vars
 	if dsn == "" {
+		log.Printf("No valid DSN from URL parsing, trying individual environment variables...")
+		
 		// Try to construct DSN from individual environment variables
 		host := os.Getenv("DB_HOST")
 		port := os.Getenv("DB_PORT")
@@ -70,6 +75,7 @@ func ConnectDB() (*gorm.DB, error) {
 
 		// For production, try to extract from DATABASE_URL if individual vars are not set
 		if host == "" && databaseURL != "" {
+			log.Printf("Attempting to extract database info from malformed URL...")
 			if parsedURL, err := url.Parse(databaseURL); err == nil {
 				host = parsedURL.Hostname()
 				if parsedURL.Port() != "" {
@@ -78,30 +84,32 @@ func ConnectDB() (*gorm.DB, error) {
 				user = parsedURL.User.Username()
 				password, _ = parsedURL.User.Password()
 				name = strings.TrimPrefix(parsedURL.Path, "/")
+				log.Printf("Extracted from URL - host: %s, port: %s, user: %s, dbname: %s", host, port, user, name)
 			}
 		}
 
-		// Set defaults for local development
+		// Validate required fields
 		if host == "" {
-			host = "localhost"
-		}
-		if port == "" {
-			port = "5432"
+			log.Fatal("Database host is required. Please set DB_HOST environment variable or provide a valid DATABASE_URL")
 		}
 		if user == "" {
-			user = "postgres"
+			log.Fatal("Database user is required. Please set DB_USER environment variable or provide a valid DATABASE_URL")
 		}
-		if name == "" {
-			name = "geekcode"
-		}
-
 		if password == "" {
 			log.Fatal("Database password is required. Please set DB_PASSWORD environment variable or provide a valid DATABASE_URL")
+		}
+		if name == "" {
+			log.Fatal("Database name is required. Please set DB_NAME environment variable or provide a valid DATABASE_URL")
+		}
+
+		// Set default port if not provided
+		if port == "" {
+			port = "5432"
 		}
 
 		// Determine SSL mode based on environment
 		sslMode := "disable"
-		if os.Getenv("PORT") != "" { // Production environment
+		if os.Getenv("PORT") != "" { // Production environment (Render sets PORT)
 			sslMode = "require"
 		}
 
@@ -110,7 +118,7 @@ func ConnectDB() (*gorm.DB, error) {
 			host, port, user, password, name, sslMode,
 		)
 		log.Printf("Using individual database environment variables")
-		log.Printf("Database host: %s, port: %s, user: %s, dbname: %s", host, port, user, name)
+		log.Printf("Database host: %s, port: %s, user: %s, dbname: %s, sslmode: %s", host, port, user, name, sslMode)
 	}
 
 	log.Printf("Attempting to connect to database...")
