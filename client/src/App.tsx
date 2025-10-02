@@ -9,22 +9,26 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
 import { RoomProvider } from "./context/RoomContext";
+import { AuthProvider } from "./context/AuthContext";
 function App() {
   return (
     <BrowserRouter>
-      <CodeProvider>
-        <RoomProvider>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/get-started" element={<Register />} />
-            <Route path="/code/:roomId" element={<CodeLayout />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/rooms/:roomId" element={<Rooms />} />
-          </Routes>
-        </RoomProvider>
+      <AuthProvider>
+        <CodeProvider>
+          <RoomProvider>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/get-started" element={<Register />} />
+              <Route path="/code/:roomId" element={<CodeLayout />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/rooms/:roomId" element={<Rooms />} />
+            </Routes>
+          </RoomProvider>
 
-      </CodeProvider>
+        </CodeProvider>
+      </AuthProvider>
+
     </BrowserRouter>
   );
 }

@@ -39,6 +39,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, jwtSecret string) {
 	protected.POST("/rooms", h.CreateRoom)        // Create room
 	protected.GET("/rooms", h.ListRooms)          // List user's rooms
 	protected.GET("/rooms/:roomId", h.GetRoom)    // Get specific room
+	protected.GET("/rooms/active", h.GetActiveRooms)  // Get active rooms
+	protected.GET("/rooms/ended", h.GetEndedRooms)    // Get ended rooms
+	protected.PUT("/rooms/:roomId/end", h.EndRoom)    // End a room
 
 
 

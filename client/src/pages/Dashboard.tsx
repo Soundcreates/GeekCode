@@ -12,19 +12,22 @@ import {
   Star,
   FileText,
   Play,
-  Pause,
   Globe,
-  MessageSquare,
-  GitBranch,
   Folder,
+  Activity,
+  Archive,
 } from "lucide-react";
 import CreateRoomModal from "../components/CreateRoomModal";
 import { useRoom, type Room } from "../context/RoomContext";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard: FC = () => {
   const [openRoomModal, setOpenRoomModal] = useState<boolean>(false);
   const [recentRooms, setRecentRooms] = useState<Room[]>([]);
-  const { getRooms } = useRoom() || {};
+  const [activeRooms] = useState<Room[]>([]);
+  const [endedRooms] = useState<Room[]>([]);
+  const { getRooms } = useRoom();
+  const { user } = useAuth();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -46,18 +49,22 @@ const Dashboard: FC = () => {
   };
 
   useEffect(() => {
-    const fetchRecentRooms = async () => {
+    const fetchRooms = async () => {
       if (getRooms) {
-        const rooms = await getRooms();
-        if (rooms) {
-          setRecentRooms(rooms.slice(0, 4)); // Gets the 4 most recent rooms
+        try {
+          const recent = await getRooms()
+
+          if (recent) setRecentRooms(recent.slice(0, 4));
+
+          console.log("Rooms fetched:", recent);
+        } catch (error) {
+          console.error("Error fetching rooms:", error);
         }
-        console.log("Recent rooms are: ", rooms);
       }
     }
 
-    fetchRecentRooms();
-  }, []);
+    fetchRooms();
+  }, [getRooms]);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col relative overflow-hidden">
@@ -127,7 +134,7 @@ const Dashboard: FC = () => {
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse"></div>
                 </div>
                 <h2 className="text-2xl font-bold mb-1">Welcome Back</h2>
-                <p className="text-gray-400 text-lg">Shantanav Mukherjee</p>
+                <p className="text-gray-400 text-lg">{user?.firstname}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Star className="w-4 h-4 text-yellow-500" />
                   <span className="text-sm text-gray-400">
@@ -176,39 +183,32 @@ const Dashboard: FC = () => {
                 </div>
 
                 <div className="flex-1 space-y-4">
-                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-green-400">
-                        React Project
-                      </h4>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-gray-400">Live</span>
+                  {activeRooms.length > 0 ? (
+                    activeRooms.slice(0, 2).map((room) => (
+                      <div key={room.id} className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-green-400">
+                            {room.Name}
+                          </h4>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs text-gray-400">Active</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">
+                          Room ID: {room.RoomID.slice(0, 8)}...
+                        </p>
+                        <Button size="sm" className="w-full">
+                          Join Room
+                        </Button>
                       </div>
+                    ))
+                  ) : (
+                    <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50 text-center">
+                      <div className="text-gray-400 text-sm">No active rooms</div>
+                      <div className="text-gray-500 text-xs mt-1">Create a room </div>
                     </div>
-                    <p className="text-sm text-gray-400 mb-3">
-                      3 collaborators coding
-                    </p>
-                    <Button size="sm" className="w-full">
-                      Join Session
-                    </Button>
-                  </div>
-
-                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-blue-400">
-                        API Design
-                      </h4>
-                      <div className="flex items-center gap-1">
-                        <Pause className="w-3 h-3 text-yellow-500" />
-                        <span className="text-xs text-gray-400">Paused</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">1 collaborator</p>
-                    <Button size="sm" variant="outline" className="w-full">
-                      Resume
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -344,7 +344,7 @@ const Dashboard: FC = () => {
           )}
         </motion.div>
 
-        {/* Collaboration Stats */}
+        {/* Ended Rooms */}
         <motion.div
           variants={itemVariants}
           whileHover={{ scale: 1.02, rotateY: -2 }}
@@ -358,26 +358,26 @@ const Dashboard: FC = () => {
               <div className="relative z-10">
                 <div className="relative mb-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <MessageSquare className="w-8 h-8 text-white" />
+                    <Archive className="w-8 h-8 text-white" />
                   </div>
                 </div>
 
-                <h2 className="text-xl font-bold mb-2">Messages</h2>
+                <h2 className="text-xl font-bold mb-2">Ended</h2>
                 <p className="text-3xl font-bold text-transparent bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text mb-1">
-                  47
+                  {endedRooms.length}
                 </p>
-                <p className="text-gray-400 text-sm">This Week</p>
+                <p className="text-gray-400 text-sm">Completed Sessions</p>
 
                 <div className="flex items-center justify-center gap-1 mt-3">
-                  <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-500">3 unread</span>
+                  <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">All time</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Code Activity */}
+        {/* Room Statistics */}
         <motion.div
           variants={itemVariants}
           whileHover={{ scale: 1.02 }}
@@ -391,66 +391,58 @@ const Dashboard: FC = () => {
               <div className="relative z-10 h-full flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center">
-                    <GitBranch className="w-6 h-6 text-white" />
+                    <Activity className="w-6 h-6 text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold">Recent Activity</h2>
+                  <h2 className="text-2xl font-bold">Room Statistics</h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                  {[
-                    {
-                      action: "Created new component",
-                      room: "React Dashboard",
-                      time: "5 mins ago",
-                      user: "You",
-                    },
-                    {
-                      action: "Added shared note",
-                      room: "API Development",
-                      time: "12 mins ago",
-                      user: "Alex",
-                    },
-                    {
-                      action: "Updated styles",
-                      room: "Mobile App UI",
-                      time: "1 hour ago",
-                      user: "Sarah",
-                    },
-                    {
-                      action: "Fixed bug in auth",
-                      room: "React Dashboard",
-                      time: "2 hours ago",
-                      user: "Mike",
-                    },
-                  ].map((activity, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.02, x: 4 }}
-                      className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50 hover:border-gray-600 transition-all duration-300"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-white text-sm">
-                          {activity.action}
-                        </h4>
-                        <span className="text-xs text-gray-500">
-                          {activity.time}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400 mb-1">
-                        in {activity.room}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        by {activity.user}
-                      </p>
-                    </motion.div>
-                  ))}
+                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-white text-sm">Total Rooms</h4>
+                      <span className="text-lg font-bold text-violet-400">
+                        {recentRooms.length + activeRooms.length + endedRooms.length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400">All time created</p>
+                  </div>
+
+                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-white text-sm">Active Now</h4>
+                      <span className="text-lg font-bold text-green-400">
+                        {activeRooms.length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400">Currently running</p>
+                  </div>
+
+                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-white text-sm">Completed</h4>
+                      <span className="text-lg font-bold text-blue-400">
+                        {endedRooms.length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400">Successfully ended</p>
+                  </div>
+
+                  <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-white text-sm">Recent</h4>
+                      <span className="text-lg font-bold text-orange-400">
+                        {recentRooms.length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400">Last 4 created</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Shared Notes */}
+        {/* Quick Actions */}
         <motion.div
           variants={itemVariants}
           whileHover={{ scale: 1.02, rotateY: 2 }}
@@ -464,19 +456,30 @@ const Dashboard: FC = () => {
               <div className="relative z-10">
                 <div className="relative mb-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-rose-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <FileText className="w-8 h-8 text-white" />
+                    <Code className="w-8 h-8 text-white" />
                   </div>
                 </div>
 
-                <h2 className="text-xl font-bold mb-2">Notes</h2>
-                <p className="text-3xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text mb-1">
-                  28
-                </p>
-                <p className="text-gray-400 text-sm">Shared Notes</p>
+                <h2 className="text-xl font-bold mb-2">Quick Start</h2>
+                <p className="text-gray-400 text-sm mb-4">Get coding instantly</p>
 
-                <div className="flex items-center justify-center gap-1 mt-3">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="text-xs text-gray-500">5 favorites</span>
+                <div className="space-y-2">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setOpenRoomModal(true)}
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    New Room
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Join Room
+                  </Button>
                 </div>
               </div>
             </CardContent>

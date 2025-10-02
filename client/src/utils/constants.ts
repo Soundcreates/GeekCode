@@ -3,4 +3,5 @@ export const LANGUAGE_OPTIONS: Record<string, string> = {
   python: "3.10.0",
   java: "17.0.0",
   cpp: "10.2.0",
+  c: "10.2.0",
 };

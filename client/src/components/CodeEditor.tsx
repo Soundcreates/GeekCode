@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import type { OnMount } from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 import LanguageSelector from "./LanguageSelector";
 import Output from "./Output";
 import ClientCounter from "./ClientCounter";
 import { useCode, type FileType } from "../context/globalCode";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
+import { Play, Terminal, X } from "lucide-react";
+import GeminiAssistant from "./GeminiAssistant";
 interface ClientInfo {
   user: string;
   userId: string;
@@ -19,10 +22,13 @@ interface WebSocketMessage {
   room?: string;
   user?: string;
   userId?: string;
-  change?: any;
+  change?: unknown;
   clients?: ClientInfo[];
   clientCount?: number;
   timestamp?: string;
+  code?: string;
+  language?: string;
+  fileName?: string;
 }
 
 type CodeEditorProps = {
@@ -33,7 +39,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
   const navigate = useNavigate();
   const { file, setFile, files, setFiles } = useCode();
   const { user } = useAuth();
-  const editorRef = useRef<any | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,6 +48,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
   const [clientCount, setClientCount] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [terminalHeight, setTerminalHeight] = useState(0);
+  const [isGeminiMinimized, setIsGeminiMinimized] = useState(false);
 
   const currentUser = user;
 
@@ -164,8 +173,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
 
   // WebSocket connection effect
   useEffect(() => {
-    if (!roomName || !currentUser) return;
+    if (!roomName || !currentUser) {
+      console.log('Waiting for roomName or currentUser...', { roomName, currentUser });
+      return;
+    }
 
+    console.log('Both roomName and currentUser are available, connecting...');
     const cleanup = connectWebSocket();
 
     return () => {
@@ -176,7 +189,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
         cleanup();
       }
     };
-  }, [connectWebSocket]);
+  }, [roomName, currentUser, connectWebSocket]);
 
   // Send WebSocket message
   const sendWebSocketMessage = useCallback((message: WebSocketMessage) => {
@@ -233,10 +246,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
   };
 
   // Move the conditional rendering AFTER all hooks
-  if (!file) {
+  if (!file || !currentUser) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="h-screen w-full flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="text-white text-lg mb-2">Loading CodeSpace...</div>
+          <div className="text-gray-400 text-sm">
+            {!currentUser && "Authenticating user..."}
+            {!file && currentUser && "Initializing editor..."}
+          </div>
+          <div className="mt-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -247,19 +269,42 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
     });
     navigate("/dashboard")
   };
+
+  const toggleTerminal = () => {
+    setIsTerminalOpen(!isTerminalOpen);
+    setTerminalHeight(isTerminalOpen ? 0 : 300);
+  };
+
+  const runCode = () => {
+    // Send run code message via WebSocket
+    sendWebSocketMessage({
+      action: 'run_code',
+      room: roomName,
+      user: currentUser?.username,
+      userId: currentUser?.id?.toString() || currentUser?.username,
+      code: file.value,
+      language: file.language,
+      fileName: file.name || 'main'
+    });
+
+    // Open terminal to show output
+    if (!isTerminalOpen) {
+      toggleTerminal();
+    }
+  };
+
   return (
-    <div className="h-screen w-full flex flex-col p-4 gap-4">
-      {/* Top Row - Editor and Client Info */}
-      <div className="flex gap-4 h-3/5">
-        {/* Left Side - Editor */}
-        <div className="w-3/4 flex flex-col">
-          <div className="flex gap-2 mb-2">
+    <div className="h-screen w-full flex flex-col bg-gray-900">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between p-2 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
             {files.map((f: FileType, idx: number) => (
               <button
                 key={idx}
-                className={`px-3 py-1 rounded-t ${f === file
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300"
+                className={`px-3 py-1 rounded-t text-sm ${f === file
+                  ? "bg-gray-900 text-white border-b-2 border-blue-500"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                   }`}
                 onClick={() => handleTabClick(f)}
               >
@@ -273,9 +318,36 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
             onSelect={handleLanguageSelect}
             setLanguage={() => { }}
           />
+        </div>
 
+        <div className="flex items-center gap-2">
+          <button
+            onClick={runCode}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            Run
+          </button>
+
+          <button
+            onClick={toggleTerminal}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${isTerminalOpen
+              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              }`}
+          >
+            <Terminal className="w-4 h-4" />
+            Terminal
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Editor Area */}
+        <div className="flex-1 flex flex-col">
           <Editor
-            className="rounded-md mt-1 flex-1"
+            className="flex-1"
             height="100%"
             width="100%"
             value={file.value}
@@ -289,50 +361,97 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ roomId: roomName }: CodeEditorP
               minimap: { enabled: false },
               fontSize: 14,
               wordWrap: 'on',
+              scrollBeyondLastLine: false,
+              renderLineHighlight: 'line',
+              cursorBlinking: 'blink',
+              cursorStyle: 'line',
             }}
           />
         </div>
 
-        {/* Right Side - Client Info */}
-        <div className="w-1/4 flex flex-col">
+        {/* Right Sidebar */}
+        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
           {/* Client Counter */}
-          <ClientCounter
-            clientCount={clientCount}
-            clients={clients}
-            connectionStatus={isReconnecting ? 'connecting' : connectionStatus}
-          />
+          <div className="p-4 border-b border-gray-700">
+            <ClientCounter
+              clientCount={clientCount}
+              clients={clients}
+              connectionStatus={isReconnecting ? 'connecting' : connectionStatus}
+            />
+          </div>
 
           {/* Room Info */}
-          <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 mb-4">
-            <h4 className="text-white text-sm font-semibold mb-2">Room Info</h4>
-            <div className="text-xs text-gray-400 space-y-1">
-              <div>Room ID: {roomName}</div>
-              <div>Your Username: {currentUser?.username}</div>
-              <div>Connection: <span className={`${connectionStatus === 'connected' ? 'text-green-400' :
-                connectionStatus === 'connecting' ? 'text-yellow-400' : 'text-red-400'
-                }`}>{connectionStatus}</span></div>
+          <div className="p-4 border-b border-gray-700">
+            <h4 className="text-white text-sm font-semibold mb-3">Room Info</h4>
+            <div className="text-xs text-gray-400 space-y-2">
+              <div className="flex justify-between">
+                <span>Room ID:</span>
+                <span className="text-gray-300">{roomName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Username:</span>
+                <span className="text-gray-300">{currentUser?.username}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Status:</span>
+                <span className={`px-2 py-1 rounded text-xs ${connectionStatus === 'connected' ? 'bg-green-600 text-white' :
+                  connectionStatus === 'connecting' ? 'bg-yellow-600 text-white' :
+                    'bg-red-600 text-white'
+                  }`}>
+                  {connectionStatus}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* WebSocket Test Panel */}
-          <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
-            <h4 className="text-white text-sm font-semibold mb-2">WebSocket Test</h4>
+          {/* AI Assistant */}
+          <div className="p-4 border-b border-gray-700">
+            <GeminiAssistant
+              isMinimized={isGeminiMinimized}
+              onToggleMinimize={() => setIsGeminiMinimized(!isGeminiMinimized)}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="p-4 mt-auto">
             <button
               onClick={() => sendWebSocketMessage({ action: 'get_room_info', room: roomName })}
-              className="bg-blue-600 text-white px-2 py-1 text-xs rounded w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm rounded mb-2 transition-colors"
             >
               Refresh Room Info
             </button>
-            <button onClick={handleLeave} className="bg-red-500 text-white px-2 py-1 text-s rounded-md mt-2 cursor-pointer w-full hover:bg-red-700 transition-all duration-300">
-              Leave
+            <button
+              onClick={handleLeave}
+              className="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-sm rounded transition-colors"
+            >
+              Leave Room
             </button>
           </div>
         </div>
       </div>
 
-      {/* Bottom Row - Output Terminal */}
-      <div className="h-2/5">
-        <Output value={file.value} language={file.language} />
+      {/* Slide-up Terminal */}
+      <div
+        className="bg-gray-900 border-t border-gray-700 transition-all duration-300 ease-in-out overflow-hidden"
+        style={{ height: `${terminalHeight}px` }}
+      >
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-2 bg-gray-800 border-b border-gray-700">
+            <div className="flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-300">Terminal</span>
+            </div>
+            <button
+              onClick={toggleTerminal}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex-1 p-4">
+            <Output value={file.value} language={file.language} />
+          </div>
+        </div>
       </div>
     </div>
   );

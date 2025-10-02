@@ -1,14 +1,14 @@
 package ws
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
-    "sync"
-    "time"
+	"encoding/json"
+	"log"
+	"net/http"
+	"sync"
+	"time"
 
-    "github.com/gin-gonic/gin"
-    "github.com/gorilla/websocket"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type Client struct {
@@ -46,6 +46,11 @@ type Message struct {
     Clients     []ClientInfo    `json:"clients,omitempty"`
     ClientCount int             `json:"clientCount,omitempty"`
     Timestamp   time.Time       `json:"timestamp,omitempty"`
+    Code        string          `json:"code,omitempty"`
+    Language    string          `json:"language,omitempty"`
+    FileName    string          `json:"fileName,omitempty"`
+    Output      string          `json:"output,omitempty"`
+    Error       string          `json:"error,omitempty"`
 }
 
 func HandleWebSocket(c *gin.Context) {
@@ -142,12 +147,26 @@ func (c *Client) readMessages() {
             log.Printf("Broadcasting edit message in room: %s", msg.Room)
             broadcastToRoom(msg.Room, msgBytes, c)
 
+        case "code_change":
+            log.Printf("Broadcasting code change in room: %s", msg.Room)
+            broadcastToRoom(msg.Room, msgBytes, c)
+
+        case "language_change":
+            log.Printf("Broadcasting language change in room: %s", msg.Room)
+            broadcastToRoom(msg.Room, msgBytes, c)
+
+        case "run_code":
+            log.Printf("Code execution requested in room: %s", msg.Room)
+            // For now, just broadcast the run request
+            // In a real implementation, you'd execute the code here
+            broadcastToRoom(msg.Room, msgBytes, c)
+
         case "get_room_info":
             sendRoomInfo(c)
 
         case "leave":
             broadcastSystemMessage(c.room, c.user+" left the room", c)
-						unregisterClient(c)
+            unregisterClient(c)
             return
 
         default:

@@ -15,9 +15,9 @@ type Room struct {
     Name      string    `gorm:"not null"`
     RoomID    string    `gorm:"uniqueIndex;not null"`
     CreatedAt time.Time
-    CreatedBy string    // the username of the user
+    CreatedBy uint      `gorm:"not null"` // the user ID who created the room
     Creator   User      `gorm:"foreignKey:CreatedBy;references:ID"`
-    Status  Status    `gorm:"default:0"` // Default to Active
+    Status    Status    `gorm:"default:0"` // Default to Active
 }
 
 type Client struct {
@@ -26,7 +26,6 @@ type Client struct {
     UserID   uint      `gorm:"not null"` // This references User.ID
     JoinedAt time.Time
 
-    // Correct foreign key relationships
-    Room Room `gorm:"foreignKey:RoomID;references:RoomID"`
+    // Only reference User to avoid circular dependency
     User User `gorm:"foreignKey:UserID;references:ID"`
 }

@@ -45,7 +45,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.status === 201) {
         return response.data as CreateRoomRequest;
       }
-    } catch (err: string | any) {
+    } catch (err: unknown) {
       console.log("Error happened at createRoom function in roomContext file!", err);
       if (err instanceof Error) {
         console.log("Error happened at createRoom function in roomContext file!", err.message);
@@ -62,7 +62,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Rooms fetched successfully!", response.data.rooms);
         return response.data.rooms as Room[];
       }
-    } catch (err: string | any) {
+    } catch (err: unknown) {
       console.log("Error happened at getRooms function in roomContext file!", err);
       if (err instanceof Error) {
         console.log("Error happened at getRooms function in roomContext file!", err.message);
@@ -78,7 +78,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.status === 200) {
         return response.data.room as Room;
       }
-    } catch (err: string | any) {
+    } catch (err: unknown) {
       console.log("Error happened at getRoomById function in roomContext file!", err);
       if (err instanceof Error) {
         console.log("Error happened at getRoomById function in roomContext file!", err.message);
@@ -97,5 +97,9 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 }
 
 export const useRoom = () => {
-  return useContext(RoomContext);
+  const context = useContext(RoomContext);
+  if (context === undefined) {
+    throw new Error('useRoom must be used within a RoomProvider');
+  }
+  return context;
 }

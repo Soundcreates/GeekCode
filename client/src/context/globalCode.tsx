@@ -1,4 +1,4 @@
-import { useContext, createContext, ReactNode, useEffect, useState } from "react";
+import { useContext, createContext, ReactNode, useState, useMemo } from "react";
 import * as monaco from "monaco-editor";
 
 export type FileType = {
@@ -26,20 +26,25 @@ const createFileWithModel = (file: Omit<FileType, "model">): FileType => ({
   model: monaco.editor.createModel(file.value, file.language),
 });
 
-export const CodeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [files, setFiles] = useState<FileType[]>([]);
-  const [file, setFile] = useState<FileType | null>(null);
+const FileTemplates: Omit<FileType, "model">[] = [
+  {
+    name: "main.js",
+    value: "// Write your JavaScript code here...",
+    language: "javascript",
+  },
+  // { name: "main.py", value: "# Write your Python code here...", language: "python" },
+  // { name: "Main.java", value: "// Write your Java code here...", language: "java" },
+  // { name: "main.cpp", value: "// Write your C++ code here...", language: "cpp" },
+];
 
-  const FileTemplates: Omit<FileType, "model">[] = [
-    {
-      name: "main.js",
-      value: "// Write your JavaScript code here...",
-      language: "javascript",
-    },
-    // { name: "main.py", value: "# Write your Python code here...", language: "python" },
-    // { name: "Main.java", value: "// Write your Java code here...", language: "java" },
-    // { name: "main.cpp", value: "// Write your C++ code here...", language: "cpp" },
-  ];
+export const CodeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Initialize files immediately with templates
+  const initialFiles = useMemo(() => {
+    return FileTemplates.map(createFileWithModel);
+  }, []);
+
+  const [files, setFiles] = useState<FileType[]>(initialFiles);
+  const [file, setFile] = useState<FileType | null>(initialFiles[0] || null);
 
   const AddFile = (newFile: Omit<FileType, "model">) => {
     // prevent duplicates
@@ -62,16 +67,6 @@ export const CodeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  useEffect(() => {
-    // initialize from templates
-    const models = FileTemplates.map(createFileWithModel);
-    setFiles(models);
-    setFile(models[0]);
-
-    return () => {
-      models.forEach((f) => f.model.dispose());
-    };
-  }, []);
 
   return (
     <CodeContext.Provider

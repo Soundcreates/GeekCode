@@ -42,7 +42,7 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 
 	room  := models.Room{
 		Name: req.Name,
-		CreatedBy: user.Username,
+		CreatedBy: user.ID,
 		CreatedAt: time.Now(),
 		Creator: user,
 		RoomID: uuid.New().String(),
@@ -68,7 +68,7 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 }
 
 func (h *Handler) ListRooms(c *gin.Context) {
-	const limit = 5
+	const limit = 10
 	var rooms []models.Room
 	userId, exists := c.Get("userId")
 	if !exists {
@@ -76,16 +76,81 @@ func (h *Handler) ListRooms(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-if err := h.DB.Where("created_by = ?", userId).Limit(limit).Find(&rooms).Error; err !=nil {
-	c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to fetch rooms!"})
-	return
-}
+	
+	// Get all rooms created by user, ordered by creation date
+	if err := h.DB.Where("created_by = ?", userId).Order("created_at DESC").Limit(limit).Find(&rooms).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch rooms!"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"rooms" : rooms,
+		"rooms": rooms,
 	})
+}
 
+// Get active rooms (rooms with status Active)
+func (h *Handler) GetActiveRooms(c *gin.Context) {
+	var rooms []models.Room
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	
+	if err := h.DB.Where("created_by = ? AND status = ?", userId, models.Active).Order("created_at DESC").Find(&rooms).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch active rooms!"})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"activeRooms": rooms,
+	})
+}
+
+// Get ended rooms (rooms with status Ended)
+func (h *Handler) GetEndedRooms(c *gin.Context) {
+	var rooms []models.Room
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	
+	if err := h.DB.Where("created_by = ? AND status = ?", userId, models.Ended).Order("created_at DESC").Find(&rooms).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ended rooms!"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"endedRooms": rooms,
+	})
+}
+
+// End a room (change status to Ended)
+func (h *Handler) EndRoom(c *gin.Context) {
+	roomId := c.Param("roomId")
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	
+	var room models.Room
+	if err := h.DB.Where("room_id = ? AND created_by = ?", roomId, userId).First(&room).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found!"})
+		return
+	}
+	
+	room.Status = models.Ended
+	if err := h.DB.Save(&room).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end room!"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Room ended successfully",
+		"room": room,
+	})
 }
 
 func (h *Handler) GetRoom(c *gin.Context){

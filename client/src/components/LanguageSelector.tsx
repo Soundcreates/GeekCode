@@ -9,6 +9,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   python: "Python",
   java: "Java",
   cpp: "C++",
+  c: "C",
 };
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
 const FILE_MAP: Record<string, string> = {
   ".js": "javascript",
   ".cpp": "cpp",
+  ".c": "c",
   ".py": "python",
   ".java": "java",
 };
@@ -32,10 +34,11 @@ function LanguageSelector({ language, onSelect, setLanguage }: Props) {
   const { AddFile } = codeCtx;
 
   const templates: Record<string, string> = {
-    javascript: "// Write your JavaScript code here...",
-    python: "# Write your Python code here...",
-    java: "// Write your Java code here...",
-    cpp: "// Write your C++ code here...",
+    javascript: "// Write your JavaScript code here...\nconsole.log('Hello, World!');",
+    python: "# Write your Python code here...\nprint('Hello, World!')",
+    java: "// Write your Java code here...\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}",
+    cpp: "// Write your C++ code here...\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << \"Hello, World!\" << endl;\n    return 0;\n}",
+    c: "// Write your C code here...\n#include <stdio.h>\n\nint main() {\n    printf(\"Hello, World!\\n\");\n    return 0;\n}",
     plaintext: "",
   };
 
@@ -47,7 +50,7 @@ function LanguageSelector({ language, onSelect, setLanguage }: Props) {
 
     const ext = Object.keys(FILE_MAP).find((ext) => name.endsWith(ext));
     if (!ext) {
-      alert("Unsupported File extension! Use .js, .py, .java or .cpp");
+      alert("Unsupported File extension! Use .js, .py, .java, .cpp, or .c");
       return;
     }
 

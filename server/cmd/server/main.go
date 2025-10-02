@@ -21,8 +21,8 @@ func main () {
 	r := gin.Default()
 
 	//handling cors
-	corsConfig := cors.Config{
-    AllowOrigins:     []string{"http://localhost:5173", cfg.PROD_URL},
+corsConfig := cors.Config{
+    AllowOrigins:     []string{"http://localhost:5173","http://localhost:5174", cfg.PROD_URL},
     AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
     AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
     ExposeHeaders:    []string{"Content-Length"},
