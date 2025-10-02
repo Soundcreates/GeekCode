@@ -23,9 +23,15 @@ func ConnectDB() (*gorm.DB, error) {
 		host := GetEnv("DB_HOST", "localhost")
 		port := GetEnv("DB_PORT", "5432")
 		user := GetEnv("DB_USER", "postgres")
-		password := GetEnv("DB_PASSWORD", "postgres")
+		password := GetEnv("DB_PASSWORD", "")
 		name := GetEnv("DB_NAME", "geekcode")
 		sslMode := GetEnv("SSL_MODE", "disable")
+		
+		// Check if required environment variables are set
+		if password == "" {
+			log.Printf("ERROR: DB_PASSWORD environment variable is required")
+			return nil, fmt.Errorf("DB_PASSWORD environment variable is required")
+		}
 		
 		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, name, sslMode)
 		log.Printf("Using individual DB variables for connection...")
