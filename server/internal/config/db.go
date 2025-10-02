@@ -17,6 +17,11 @@ func ConnectDB() (*gorm.DB, error) {
 	// Check if DATABASE_URL is provided (Railway default)
 	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
 		log.Printf("Using DATABASE_URL for connection...")
+		// Log DATABASE_URL without exposing the password
+		if len(databaseURL) > 20 {
+			maskedURL := databaseURL[:20] + "***" + databaseURL[len(databaseURL)-10:]
+			log.Printf("DATABASE_URL: %s", maskedURL)
+		}
 		dsn = databaseURL
 	} else {
 		// Fallback to individual environment variables
@@ -35,6 +40,7 @@ func ConnectDB() (*gorm.DB, error) {
 		
 		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, name, sslMode)
 		log.Printf("Using individual DB variables for connection...")
+		log.Printf("DB_HOST: %s, DB_PORT: %s, DB_USER: %s, DB_NAME: %s, SSL_MODE: %s", host, port, user, name, sslMode)
 	}
 	
 	log.Printf("Attempting to connect to database...")
